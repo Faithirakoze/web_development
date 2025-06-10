@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>TV Show Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 2em;
+            max-width: 800px;
+            margin: auto;
+            background-color: #f0f0f0;
+        }
+        .search-container {
+            background: white;
+            padding: 1.5em;
+            margin-bottom: 1.5em;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .show {
+            background: white;
+            padding: 1em;
+            margin-bottom: 1.5em;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .show h2 {
+            margin-top: 0;
+        }
+        .genres {
+            margin-top: 0.5em;
+        }
+        .genres span {
+            background: #007bff;
+            color: white;
+            padding: 0.3em 0.6em;
+            margin-right: 0.4em;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        input, button {
+            padding: 0.5em;
+            font-size: 1em;
+        }
+        input {
+            width: 70%;
+            margin-right: 0.5em;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .loading {
+            text-align: center;
+            font-style: italic;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+<h1>TV Show Search</h1>
+<div class="search-container">
+    <input type="text" id="search-input" placeholder="Enter a TV show name..." />
+    <button id="search-button">Search</button>
+</div>
+<div id="shows-container">
+    <p class="loading">Enter a show name and click search to begin.</p>
+</div>
+
+<script>
+    async function fetchShows(searchTerm) {
+        const container = document.getElementById("shows-container");
+        container.innerHTML = '<p class="loading">Loading shows...</p>';
+
+        try {
+            const response = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(searchTerm)}`);
+            const data = await response.json();
+
+            if (data.length === 0) {
+                container.innerHTML = `<p>No shows found matching "${searchTerm}".</p>`;
+                return;
+            }
+
+            container.innerHTML = "";
+
+            data.forEach(item => {
+                const show = item.show;
+
+                const showDiv = document.createElement("div");
+                showDiv.className = "show";
+
+                // Safely handle cases where image might be null
+                const imageHtml = show.image ? `<img src="${show.image.medium}" alt="${show.name}" style="max-width: 100%; margin-bottom: 1em;">` : '';
+
+                showDiv.innerHTML = `
+                    ${imageHtml}
+                    <h2>${show.name}</h2>
+                    <div>${show.summary || "No summary available."}</div>
+                    <div class="genres">
+                        <strong>Genres:</strong>
+                        ${show.genres.length > 0 ?
+                    show.genres.map(genre => `<span>${genre}</span>`).join('') :
+                    '<span>None listed</span>'}
+                    </div>
+                    ${show.officialSite ? `<p><a href="${show.officialSite}" target="_blank">Official Site</a></p>` : ''}
+                `;
+
+                container.appendChild(showDiv);
+            });
+        } catch (error) {
+            container.innerHTML = "<p>Error loading data. Please try again later.</p>";
+            console.error("Error fetching shows:", error);
+        }
+    }
+
+    // Set up event listeners
+    document.addEventListener('DOMContentLoaded', () => {
+        const searchButton = document.getElementById('search-button');
+        const searchInput = document.getElementById('search-input');
+
+        // Search when button is clicked
+        searchButton.addEventListener('click', () => {
+            const searchTerm = searchInput.value.trim();
+            if (searchTerm) {
+                fetchShows(searchTerm);
+            }
+        });
+
+        // Also search when Enter key is pressed
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const searchTerm = searchInput.value.trim();
+                if (searchTerm) {
+                    fetchShows(searchTerm);
+                }
+            }
+        });
+    });
+</script>
+</body>
+</html>
